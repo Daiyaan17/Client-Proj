@@ -1,6 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_PROMPT } from "@/lib/systemPrompt";
-import { searchCatalog } from "@/lib/catalog";
+import { searchCatalog, PRODUCTS } from "@/lib/catalog";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -27,89 +25,85 @@ export async function POST(request: Request) {
       return Response.json({ error: "No user question provided" }, { status: 400 });
     }
 
-    // Grounding with local shop catalog
-    const matches = searchCatalog(last.content, 4);
-    const shopItems = matches.length
-      ? matches
-          .map(
-            (p) =>
-              `- ${p.name} [Brand: ${p.brand}, Category: ${p.category}, Spec: ${p.spec}] Price: ₹${p.price}, Status: ${
-                p.inStock ? "In Stock" : "Out of Stock"
-              }`
-          )
-          .join("\n")
-      : "No specific items matched this query directly from catalog.";
+    const q = last.content.toLowerCase().trim();
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    // 1. MCBs & Circuit Breakers / DB Boxes
+    if (q.includes("mcb") || q.includes("breaker") || q.includes("rccb") || q.includes("isolator") || q.includes("distribution")) {
+      const items = PRODUCTS.filter((p) => p.category.includes("MCB"));
+      const itemList = items
+        .map((p) => `• ${p.name} (${p.brand}, ${p.spec}) - ₹${p.price} [${p.inStock ? "In Stock" : "Out of Stock"}]`)
+        .join("\n");
 
-    // Graceful fallback if no API key is configured yet
-    if (!apiKey) {
-      const lower = last.content.toLowerCase();
-      let mockReply =
-        "Welcome to Venus Electrical Trading Co! (Assistant running in preview mode - add GEMINI_API_KEY to activate full AI).\n\n";
-
-      if (lower.includes("wire") || lower.includes("cable") || lower.includes("ac")) {
-        mockReply +=
-          "For typical residential installations:\n• 1.5 sq mm copper wire is commonly used for lighting and fan circuits.\n• 2.5 sq mm copper wire is recommended for 1.0 to 1.5 Ton AC units and geysers.\n• We carry Finolex & Polycab FR wires starting at ₹1,850/coil.\n\nPlease note: A licensed electrician must always confirm the wire load calculation for your actual installation!";
-      } else if (lower.includes("mcb") || lower.includes("breaker")) {
-        mockReply +=
-          "We stock Schneider, Legrand & L&T MCBs. For domestic distribution:\n• Double Pole 32A MCB is available around ₹640.\n• 4-Pole RCCB 63A 30mA for shock protection is ₹3,250 in stock.";
-      } else if (matches.length > 0) {
-        mockReply += `We found matching items in our Chennai store:\n` +
-          matches.map(m => `• ${m.name} (${m.spec}) - ₹${m.price}`).join("\n") +
-          `\n\nVisit us at Thambu Chetty St, Chennai or click WhatsApp to order!`;
-      } else {
-        mockReply +=
-          "We offer wires & cables (Finolex, Polycab), modular switches (Anchor, GM), MCBs (Schneider, Legrand), and industrial lighting. How can we assist your electrical requirements today?";
-      }
-
-      return Response.json({ reply: mockReply });
+      return Response.json({
+        reply: `Here is our current MCB & Switchgear availability and pricing:\n\n${itemList}\n\nAll items are tested to ISI standards. For domestic wiring, a licensed electrician should verify your trip curves (B, C or D). You can add items to your cart or order via WhatsApp!`,
+      });
     }
 
-    const ai = new GoogleGenAI({ apiKey });
-    const contents = messages.map((m, i) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [
-        {
-          text:
-            i === messages.length - 1
-              ? `${m.content}\n\nShop items:\n${shopItems}`
-              : m.content,
-        },
-      ],
-    }));
+    // 2. Electrical Switches & Sockets
+    if (q.includes("switch") || q.includes("socket") || q.includes("modular") || q.includes("board")) {
+      const items = PRODUCTS.filter((p) => p.category.includes("Switches"));
+      const itemList = items
+        .map((p) => `• ${p.name} (${p.brand}, ${p.spec}) - ₹${p.price} [${p.inStock ? "In Stock" : "Out of Stock"}]`)
+        .join("\n");
 
-    const result = await ai.models.generateContent({
-      model,
-      contents,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        maxOutputTokens: 400,
-        temperature: 0.4,
-      },
+      return Response.json({
+        reply: `Here are our modular switches & power sockets in stock:\n\n${itemList}\n\nWe provide genuine Anchor Roma, GM, and Crabtree modular accessories in gloss white finish with fire-retardant polycarbonate plates.`,
+      });
+    }
+
+    // 3. PCBs / Electronic Circuit Boards & Custom Components
+    if (q.includes("pcb") || q.includes("circuit board") || q.includes("electronic")) {
+      return Response.json({
+        reply: `For specialized electronic PCBs, relays, and motor starter control boards:\n\n• Standard single-phase & 3-phase submersible pump starter control boards are available in stock (₹850 - ₹1,800 depending on HP rating).\n• For custom electronic PCBs or specific industrial relay boards, please contact our trade counter directly with your component specifications at +91 98400 00000 or visit our Chennai shop!`,
+      });
+    }
+
+    // 4. Wires, Cables & AC load sizing
+    if (q.includes("wire") || q.includes("cable") || q.includes("copper") || q.includes("ac") || q.includes("gauge") || q.includes("sq mm")) {
+      const items = PRODUCTS.filter((p) => p.category.includes("Wires"));
+      const itemList = items
+        .map((p) => `• ${p.name} (${p.brand}, ${p.spec}) - ₹${p.price} [${p.inStock ? "In Stock" : "Out of Stock"}]`)
+        .join("\n");
+
+      return Response.json({
+        reply: `Here are our certified copper wiring cables in stock:\n\n${itemList}\n\nGeneral Rule of Thumb:\n• 1.5 sq mm: Standard lighting and ceiling fan circuits.\n• 2.5 sq mm: 1.0 to 1.5 Ton ACs, geysers, and kitchen power points.\n• 4.0 sq mm: 2.0 Ton ACs and heavy domestic loads.\n(Please have a licensed electrician verify final load requirements).`,
+      });
+    }
+
+    // 5. Lights / Industrial Lighting
+    if (q.includes("light") || q.includes("led") || q.includes("bay") || q.includes("flood")) {
+      const items = PRODUCTS.filter((p) => p.category.includes("Light"));
+      const itemList = items
+        .map((p) => `• ${p.name} (${p.brand}, ${p.spec}) - ₹${p.price} [${p.inStock ? "In Stock" : "Out of Stock"}]`)
+        .join("\n");
+
+      return Response.json({
+        reply: `Here is our LED and industrial lighting stock:\n\n${itemList}\n\nAll lights include surge protection and pressure die-cast aluminium housing for warehouses, offices, and homes.`,
+      });
+    }
+
+    // 6. General Catalog Keyword Search Fallback
+    const matches = searchCatalog(last.content, 3);
+    if (matches.length > 0) {
+      const matchedList = matches
+        .map((p) => `• ${p.name} (${p.brand}, ${p.spec}) - ₹${p.price} [${p.inStock ? "In Stock" : "Out of Stock"}]`)
+        .join("\n");
+
+      return Response.json({
+        reply: `Here are matching products available in our shop:\n\n${matchedList}\n\nVisit us at New No.305, Thambu Chetty St, Chennai, or use the "Add to Cart" button to create a WhatsApp quote!`,
+      });
+    }
+
+    // Default friendly response
+    return Response.json({
+      reply: `Welcome to Venus Electrical Trading Co! We stock:\n• Certified FR Wires & Cables (Finolex, Polycab)\n• MCBs, DB Boxes & RCCBs (Schneider, Legrand)\n• Modular Switches & Power Sockets (Anchor, GM)\n• Industrial LED Lighting & Tools\n\nAsk about any category (e.g. "I need MCBs", "I need electrical switches", "I need wire for AC") for instant pricing and availability!`,
     });
-
-    const reply = result.text?.trim();
-    if (!reply) {
-      throw new Error("Empty response received from Gemini");
-    }
-
-    return Response.json({ reply });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Gemini Chat API Error:", errorMsg);
-
-    // If Gemini fails (e.g. invalid API key or service down), return helpful fallback response instead of breaking
-    const fallbackMatches = searchCatalog(last.content, 3);
-    let fallbackText = "Our assistant encountered a service issue. For immediate assistance, please call us at +91 98400 00000 or visit our shop in Chennai.\n\n";
-    if (fallbackMatches.length > 0) {
-      fallbackText += "Here are relevant items from our store:\n" +
-        fallbackMatches.map(m => `• ${m.name} (${m.spec}) - ₹${m.price}`).join("\n");
-    }
-
+    console.error("Local Chat Handler Error:", err);
     return Response.json(
-      { reply: fallbackText },
+      {
+        reply: "Welcome to Venus Electrical! Please check our product catalog above or call our Chennai shop at +91 98400 00000 for pricing and availability.",
+      },
       { status: 200 }
     );
   }
