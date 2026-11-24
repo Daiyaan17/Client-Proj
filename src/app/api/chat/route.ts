@@ -27,6 +27,19 @@ export async function POST(request: Request) {
 
     const q = last.content.toLowerCase().trim();
 
+    // Out-of-scope check (e.g. Laptops, Smartphones, Consumer Electronics)
+    if (
+      q.includes("laptop") ||
+      q.includes("smartphone") ||
+      q.includes("mobile") ||
+      q.includes("phone") ||
+      q.includes("computer")
+    ) {
+      return Response.json({
+        reply: `Sorry, that is not possible. Venus Electrical Trading Co is strictly an electrical supplies and switchgear trader — we do not sell laptops, smartphones, or personal consumer electronics.\n\nWe specialize exclusively in:\n• Certified Copper Wires & Cables (Finolex, Polycab)\n• MCBs, RCCBs & Distribution Boards (Schneider, Legrand)\n• Modular Switches & Power Sockets (Anchor, GM)\n• Industrial LED Lighting & Tools\n\nPlease let us know if you need assistance with any of our electrical goods!`,
+      });
+    }
+
     // 0. Explicit Error / Unrecognized query simulation option
     if (
       q.includes("error") ||
