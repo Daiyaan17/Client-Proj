@@ -26,6 +26,7 @@ const SUGGESTIONS = [
   "What is the price of 2.5 mm² wire?",
   "Do you have 32A MCB double pole?",
   "Where is your shop located?",
+  "Simulate error / Help desk",
 ];
 
 export default function ChatWidget() {

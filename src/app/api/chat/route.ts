@@ -27,6 +27,19 @@ export async function POST(request: Request) {
 
     const q = last.content.toLowerCase().trim();
 
+    // 0. Explicit Error / Unrecognized query simulation option
+    if (
+      q.includes("error") ||
+      q.includes("trouble") ||
+      q.includes("test error") ||
+      q.includes("fail") ||
+      q.includes("complain")
+    ) {
+      return Response.json({
+        reply: `⚠️ [Notice / Error Response]:\nWe are currently unable to process this request or find the requested service item. Please contact our technical desk directly:\n\n• Phone / WhatsApp: +91 98400 00000\n• Shop Counter: New No.305, Thambu Chetty St, Chennai\n• Timings: Mon-Sat 9:30 AM - 8:00 PM\n\nOur team will assist with custom quotes, stock verification, or order issues.`,
+      });
+    }
+
     // 1. MCBs & Circuit Breakers / DB Boxes
     if (q.includes("mcb") || q.includes("breaker") || q.includes("rccb") || q.includes("isolator") || q.includes("distribution")) {
       const items = PRODUCTS.filter((p) => p.category.includes("MCB"));
