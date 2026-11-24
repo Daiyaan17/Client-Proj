@@ -99,11 +99,17 @@ export async function POST(request: Request) {
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Unknown error";
     console.error("Gemini Chat API Error:", errorMsg);
+
+    // If Gemini fails (e.g. invalid API key or service down), return helpful fallback response instead of breaking
+    const fallbackMatches = searchCatalog(last.content, 3);
+    let fallbackText = "Our assistant encountered a service issue. For immediate assistance, please call us at +91 98400 00000 or visit our shop in Chennai.\n\n";
+    if (fallbackMatches.length > 0) {
+      fallbackText += "Here are relevant items from our store:\n" +
+        fallbackMatches.map(m => `• ${m.name} (${m.spec}) - ₹${m.price}`).join("\n");
+    }
+
     return Response.json(
-      {
-        reply:
-          "I couldn't reach the assistant right now. You can call us directly or visit our shop at Thambu Chetty St, Chennai.",
-      },
+      { reply: fallbackText },
       { status: 200 }
     );
   }
