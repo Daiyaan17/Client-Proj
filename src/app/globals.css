@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+:root {
+  --font-archivo: "Archivo", sans-serif;
+  --font-ibm-plex: "IBM Plex Sans", sans-serif;
+  
+  /* Brand palette */
+  --color-ink: #142036;
+  --color-conduit: #1C3FAA;
+  --color-safety-yellow: #FFC400;
+  --color-copper: #B5652B;
+}
+
+body {
+  font-family: var(--font-ibm-plex), system-ui, -apple-system, sans-serif;
+  background-color: #F8FAFC;
+  color: #142036;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-archivo), var(--font-ibm-plex), sans-serif;
+}
+
+/* Custom scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
