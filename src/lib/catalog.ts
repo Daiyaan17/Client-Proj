@@ -105,7 +105,7 @@ export const PRODUCTS: Product[] = [
     originalPrice: 240,
     rating: 4.8,
     inStock: true,
-    image: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=600&q=80",
     badge: "New",
     description: "Required for refrigerators, microwave ovens, water heaters, and washing machines."
   },
